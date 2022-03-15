@@ -42,9 +42,30 @@ async function routes(request, response){
         return stream.pipe(response)
     }
 
-    return response.end('hello')
+    //files
+    if(method === 'GET'){
+        const {
+            stream, type
+        } = await controller.getFileStream(url)
+        return stream.pipe(response)
+    }
+
+    response.writeHead(404)
+    return response.end()
+}
+
+function handleError(error, response) {
+    if(error.message.includes('ENOENT')){
+        logger.warn(`asset not found ${error.stack}`)
+        response.writeHead(404)
+        return response.end()
+    }
+
+    logger.error(`caught error on API ${error.stack}`)
+    response.writeHead(500)
+    return response.end()
 }
 
 export function handler (request, response) {
-    return routes(request, response).catch( error => logger.error(`Erro: ${error.stack}`))
+    return routes(request, response).catch( error => handleError(error, response))
 }
